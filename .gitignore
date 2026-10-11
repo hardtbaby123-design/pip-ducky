@@ -1,0 +1,9 @@
+*.mp4
+*.mov
+*.avi
+*.wav
+*_frames/
+frames/
+qc/
+*.log
+__pycache__/
