@@ -25,7 +25,8 @@ subprocess.run([
     '-pix_fmt', 'yuv420p',
     '-vf', 'scale=1920:1080',
     '-c:a', 'aac', '-b:a', '192k',
-    '-shortest',
+    # NOTE: no -shortest — it trimmed the final frame (4971 vs 4972).
+    # Video (4972f = 165.733s) is the authority; audio (165.717s) ends 16ms early.
     '-movflags', '+faststart',
     OUT
 ], check=True)

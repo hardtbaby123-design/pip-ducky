@@ -30,23 +30,31 @@ APPEARANCES = [
 ]
 
 CREAM = (253, 242, 226)
+# v4 spec (binding): panel 440x320, bottom-center, top edge y=565.
+# Rounded rectangle r=36, character scaled to ~260px tall, centered.
 PANEL_W, PANEL_H = 440, 320
 RADIUS = 36
+PANEL_TOP_Y = 565
+CHAR_H = 260
 
 def make_panel(pose_path):
     """Build a cream rounded panel with the pose centered."""
     pose = Image.open(f'build/poses/{pose_path}.png').convert('RGB')
-    # scale pose to fit panel with padding
     pw, ph = pose.size
-    target_h = PANEL_H - 60
-    scale = target_h / ph
+    scale = CHAR_H / ph
     nw, nh = int(pw * scale), int(ph * scale)
     pose = pose.resize((nw, nh), Image.LANCZOS)
-    panel = Image.new('RGBA', (PANEL_W, PANEL_H), CREAM + (255,))
-    d = ImageDraw.Draw(panel)
-    d.rounded_rectangle([0, 0, PANEL_W, PANEL_H], radius=RADIUS, fill=CREAM + (255,))
+    # base panel
+    panel = Image.new('RGB', (PANEL_W, PANEL_H), CREAM)
     panel.paste(pose, ((PANEL_W - nw) // 2, (PANEL_H - nh) // 2))
-    return panel
+    # rounded mask applied AFTER pose paste
+    mask = Image.new('L', (PANEL_W, PANEL_H), 0)
+    md = ImageDraw.Draw(mask)
+    md.rounded_rectangle([0, 0, PANEL_W, PANEL_H], radius=RADIUS, fill=255)
+    out = Image.new('RGBA', (PANEL_W, PANEL_H), (0, 0, 0, 0))
+    out.paste(panel, (0, 0))
+    out.putalpha(mask)
+    return out
 
 panels = {name: make_panel(name) for _, name in APPEARANCES}
 print('panels built', flush=True)
@@ -76,8 +84,9 @@ for f in range(F_START, F_END):
         continue
     frame = Image.open(f'{IN_DIR}/fr_{f:05d}.png').convert('RGBA')
     W, H = frame.size
-    # bottom-center, clear of hero sun face (sun center at H*0.44)
-    px, py = (W - PANEL_W) // 2, H - PANEL_H - 15
+    # v4 spec (binding): bottom-center, top edge at y=565 — hero sun eyes at
+    # y=396 always clear. (1920x1080: px = (1920-440)//2 = 740.)
+    px, py = (W - PANEL_W) // 2, PANEL_TOP_Y
 
     for f0, f1, panel in apps:
         if f0 <= f < f1:
